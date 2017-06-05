@@ -1,5 +1,6 @@
 import qualified Data.Text as T
 import System.Environment
+import Data.Array
 
 debug=True
 
@@ -7,6 +8,7 @@ data Friendly a = Edge [(a,a)]
         deriving (Show,Eq)
 
 data Return a = Ret (Bool,Int,[Int],[Int])
+data Node = Int
 
 qsort:: Ord a=>[a]->[a]
 qsort [] = []
@@ -24,7 +26,7 @@ edgeToAdjList e = adj
     adj1 = map findAdj [1..n]
     adj = if debug then map qsort adj1 else adj1
 
-dfs :: Int->[[Int]]->(Bool,Int,[Int],[Int], [(Bool,Int,[Int],[Int])])
+dfs :: Int->Array Int [Int]->(Bool,Int,[Int],[Int], [(Bool,Int,[Int],[Int])])
 dfs n adj = 
   dfsRec [] 0 0 1
   where
@@ -39,7 +41,7 @@ dfs n adj =
       where
       checkVisited acc (n,realC)=if n==node then (True,realC) else acc
       (amVisited,realCounter)=foldl checkVisited (False,counter) visited
-      adjNodes=adj!!(node-1)
+      adjNodes=adj!(node-1)
  --     foldf :: ([(Bool,Int)],[Int],[Int])->Int->([(Bool,Int)],[Int],[Int])
       foldf :: ([(Bool,Int)],[Int],[Int],[(Bool,Int,[Int],[Int])])->Int->([(Bool,Int)],[Int],[Int],[(Bool,Int,[Int],[Int])] )
       foldf (res,cut,closed,trace) adjNode
@@ -66,11 +68,12 @@ pureMain strs=
     input=foldr (\x acc->if length x==2 then (read(head x)::Int,read(head$tail x)::Int):acc else acc) [] spl
     (n,k)=head input
     adj= edgeToAdjList$tail input
+    adjArray = listArray (0,n-1) adj
     --res=dfs n adj
-    (_,_,res1,_,_)=dfs n adj
-    res=(res1,length res1)
+    (_,_,res1,_,_)=dfs n adjArray
+  --  res=(res1,length res1)
   in
-    res
+    res1
 
 readLines :: FilePath -> IO [String]
 readLines = fmap lines . readFile
@@ -78,7 +81,7 @@ makeInteger :: [String] -> [Int]
 makeInteger =map read
 
 main = do
-    content <- readLines "in.txt"
+    content <- readLines "in2.txt"
     return (pureMain content)
  --   print "1"
   --  ls<-map (\x -> T.splitOn (T.pack " ") (T.pack x)) content
