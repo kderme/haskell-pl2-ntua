@@ -1,10 +1,10 @@
 import qualified Data.Text as T
 import System.Environment
 import Data.Array as Array
-import Data.Map as Map (Map,empty,lookup,insert)
-import Data.Set as Set (Set,empty,member,union,insert)
+import Data.Map as Map (Map,empty,lookup,insert,fromList,toList,(!))
+import Data.Set as Set (Set,empty,member,union,insert,toList)
 
-debug=True
+debug=False
 
 data Friendly a = Edge [(a,a)]
         deriving (Show,Eq)
@@ -18,17 +18,18 @@ qsort [] = []
 qsort (x:xs)=(qsort$filter (\c->c<=x) xs )++[x]++(qsort$filter (\c->c>x) xs )
 
 --transforms a graph from a list of edges to a list of adjacent nodes
-edgeToAdjList e = adj
+--Set and Map lookups and inserts cost O(log(n)), so it has complexity O(elogn)
+edgeToAdjList::Int->[(Node,Node)]->[[Node]]
+edgeToAdjList n e = adj1
   where
-    n=foldl (\acc (x,y) -> max y (max acc x)) 0 e
-    init=replicate n []
-    addNew nn acc (x,y)
-      | nn==x =y:acc
-      | nn==y =x:acc
-      | otherwise = acc
-    findAdj nn = foldl (addNew nn) [] e
-    adj1 = map findAdj [1..n]
-    adj = if debug then map qsort adj1 else adj1
+  init=Map.fromList $ map (\k->(k,Set.empty)) [1..n] --[(k,Set.empty)| k<-[1..n] ]
+  updateMapWithEdge map0 (a,b)=mapB
+    where
+    updateSetInMap x y mapp = Map.insert x (Set.insert y $ mapp Map.! x) mapp
+    mapA = updateSetInMap a b map0
+    mapB = updateSetInMap b a mapA
+  adjMapOfSets=foldl updateMapWithEdge init e
+  adj1= map (\(_,set)->Set.toList set) $ Map.toList adjMapOfSets
 
 --The [Ret] list is used to keep a trace of all returns for debugging
 dfs :: Node -> Array Node [Node]-> (Ret,[Ret])
@@ -42,11 +43,11 @@ dfs n adj =
       Just realCounter -> dfsRetRecWrapper (True,realCounter,[],Set.empty) []
       Nothing          -> res
         where
-        adjNodes=adj!(node-1)
+        adjNodes=adj Array.! (node-1)
         foldf :: ([(Bool,Time)],[Node],Set Node,[Ret])->Node->([(Bool,Time)],[Node],Set Node,[Ret] )
         foldf (res,cut,closed,trace) adjNode
-          | adjNode==father || Set.member adjNode closed =  (res,cut,closed,trace) 
-          | otherwise =(((inc,t):res),newCut++cut,Set.union newClosed closed,newTrace++trace)
+          | adjNode==father || Set.member adjNode closed =  (res,cut,closed,trace)
+          | otherwise =(((inc,t):res),newCut++cut,Set.union newClosed closed,(if debug then newTrace else []) ++trace)
             where
             ((inc,t,newCut,newClosed),newTrace)=dfsRec (Map.insert node counter visited) (counter+1) node adjNode
         (results,cuts,closed,trace)=foldl foldf ([],[],Set.empty,[]) adjNodes
@@ -67,7 +68,7 @@ pureMain strs=
     spl=split strs
     input=foldr (\x acc->if length x==2 then (read(head x)::Int,read(head$tail x)::Int):acc else acc) [] spl
     (n,k)=head input
-    adjList= edgeToAdjList$tail input
+    adjList= edgeToAdjList n $tail input
     adjArray = listArray (0,n-1) adjList
     ((_,_,res,_),_)=dfs n adjArray
   in
