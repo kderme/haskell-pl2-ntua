@@ -1,31 +1,17 @@
 import Data.Text as T (pack,unpack,splitOn)
 --import Data.Tree as Tree
-import Data.List as List(sort,sortBy,find)
+import Data.List as List(find)
 import Data.Map  as Map(Map,fromList,insert,(!))
 import Data.Array as Array(Array,listArray,array,(!))
-import Data.Ix
+import Tree as Tree(Tree,singleton,fromArrays,inside,foldTree)
+--import Data.Ix
 import Data.Maybe as Maybe
-
-data Tree a = Empty| Node(a,Forest a) deriving (Show)
-
-type Forest a=[Tree a]
-
-singleton:: a->Tree a
-singleton x=Node(x,[])
-
-treeFromArrays:: (Ix b)=>Array b a->Array b [b]->b->Tree a
-treeFromArrays contents children root=treeRec root
-  where
-    treeRec rt= Node(contents Array.! rt, map treeRec (children Array.! rt))
-
---fromArray::
---fromArray arr root=
 
 type Id=Int
 type Value=Int
 type Content=(Id,Value,Id)
 
-type RecRet=(Value,Value,Id)
+type RecRet=(Value,Value,Id,[(Value,Value,Id)])
 
 readLines :: FilePath -> IO [String]
 readLines = fmap lines . readFile
@@ -40,8 +26,8 @@ compareN (_,_,a) (_,_,b)
 
 --recSolution :: Tree a->
 --recSolution:: Value->Tree Content->RecRet
-recSolution totalSum tr=case tr of
- Node((id,val,_), children)->(sum,minMaxSum,idMinMaxSum,(sum,minMaxSum,idMinMaxSum):traceCH)
+recSolution totalSum tr=case Tree.inside(tr) of
+ ((id,val,_), children)->(sum,minMaxSum,idMinMaxSum,(sum,minMaxSum,idMinMaxSum):traceCH)
    where
     ff (a1,b1,c1,d1,tr1) (a2,c2,d2,tr2)=(a1+a2,max a1 a2,if changeMin then c2 else c1 ,if changeMin then d2 else d1,tr1++tr2)
       where
@@ -50,9 +36,25 @@ recSolution totalSum tr=case tr of
     maxSum = max maxSumCH (totalSum-sum)
     (minMaxSum,idMinMaxSum) = if minMaxSumCH<maxSum then (minMaxSumCH,idMinMaxSumCH) else (maxSum,id)
 
+-- alternative to RecSolution
+-- Recursion here is done using Tree.foldTree
+solution2:: Value->Tree Content->RecRet
+solution2 totalSum=foldTree f
+  where
+    f:: Content->[RecRet]->RecRet
+    f (id,val,_) results=(sum,minMaxSum,idMinMaxSum,(sum,minMaxSum,idMinMaxSum):traceCH)
+      where
+        ff (a1,b1,c1,d1,tr1) (a2,c2,d2,tr2)=(a1+a2,max a1 a2,if changeMin then c2 else c1 ,if changeMin then d2 else d1,tr1++tr2)
+         where
+          changeMin=c2<c1
+        (sum,maxSumCH,minMaxSumCH,idMinMaxSumCH,traceCH)=foldl ff (val,-1,maxBound,-1,[]) results
+        maxSum = max maxSumCH (totalSum-sum)
+        (minMaxSum,idMinMaxSum) = if minMaxSumCH<maxSum then (minMaxSumCH,idMinMaxSumCH) else (maxSum,id)
+       
 createTree:: [Content]->Id->Tree Content
 createTree nodes n= tree--tree
 --  sorted=List.sortBy compareN nodes
+--  TODO sorting with respect to can speed things up as
   where
     (root,_,_) = Maybe.fromJust ( List.find (\(_,_,father)-> father==0) nodes)::Content
     contentTable = Array.listArray (1,n) nodes
@@ -64,11 +66,9 @@ createTree nodes n= tree--tree
           if father==0 then mp
           else Map.insert father (id:(mp Map.! father)) mp
     childrenTable=Array.array (1,n) $ map (\k->(k, childrenMap Map.! k)) [1..n]
-    tree=treeFromArrays contentTable childrenTable root
- --     where
-   --     create k=(internalTable Map.! k,childrenTable Map.! k)
+    tree=Tree.fromArrays contentTable childrenTable root
 
-pureMain ls=ret
+pureMain ls=id
   where
     n=read$head ls::Int
     spl=mapSplit ls
@@ -79,7 +79,7 @@ pureMain ls=ret
       filterParseCount _ acc = acc
     tree= createTree nodes n
     sum = foldl (\acc (_,val,_)->acc+val) 0 nodes::Value
-    ret = recSolution sum tree
+    (_,_,id,_) = solution2 sum tree
     
  --   flat=Tree.flatten tree
 
