@@ -14,7 +14,7 @@ elif(len(sys.argv)==2):
 
 print str(N)
 
-fp = open("in.txt",'w')
+fp = open("inputs/in.txt",'w')
 #Numbers of edges is not used by our program
 st=""
 edges=0

@@ -1,11 +1,22 @@
-import Data.Text as T (pack,unpack,splitOn)
---import Data.Tree as Tree
+{--------------------------------------------------------
+ Programming Langiages 2 2015, 
+ National Technical University of Athens
+ Created by Dermentzis Konstantinos
+  
+ This program finds the most balanced node in a Tree
+ the most balanced node minimizes the max sum of subtrees
+----------------------------------------------------------}
+
+import Data.Text as T(pack,unpack,splitOn)
+import System.Environment
 import Data.List as List(find)
 import Data.Map  as Map(Map,fromList,insert,(!))
 import Data.Array as Array(Array,listArray,array,(!))
-import Tree as Tree(Tree,singleton,fromArrays,inside,foldTree)
---import Data.Ix
 import Data.Maybe as Maybe
+
+
+import Tree as Tree(Tree,singleton,fromArrays,inside,foldTree,showTree)
+
 
 type Id=Int
 type Value=Int
@@ -54,7 +65,7 @@ solution2 totalSum=foldTree f
 createTree:: [Content]->Id->Tree Content
 createTree nodes n= tree--tree
 --  sorted=List.sortBy compareN nodes
---  TODO sorting with respect to can speed things up as
+--  TODO sorting with respect to father could speed things up
   where
     (root,_,_) = Maybe.fromJust ( List.find (\(_,_,father)-> father==0) nodes)::Content
     contentTable = Array.listArray (1,n) nodes
@@ -68,7 +79,7 @@ createTree nodes n= tree--tree
     childrenTable=Array.array (1,n) $ map (\k->(k, childrenMap Map.! k)) [1..n]
     tree=Tree.fromArrays contentTable childrenTable root
 
-pureMain ls=id
+pureMain ls= id
   where
     n=read$head ls::Int
     spl=mapSplit ls
@@ -80,10 +91,11 @@ pureMain ls=id
     tree= createTree nodes n
     sum = foldl (\acc (_,val,_)->acc+val) 0 nodes::Value
     (_,_,id,_) = solution2 sum tree
-    
- --   flat=Tree.flatten tree
 
 main = do
-    str <- readLines "in.txt"
-    putStrLn $ show$ pureMain str
+  args <- getArgs
+  case args of
+    [file] -> do
+      str <- readLines file
+      putStrLn (show$pureMain str)
 

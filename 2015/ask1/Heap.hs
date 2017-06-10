@@ -10,7 +10,7 @@
   - find min O(1)
   - extract min O(long(N)))
  
-  Our solution is influenced by haskell docs from here:
+  Our solution is influenced by haskell packages source code from here:
   https://hackage.haskell.org/package/containers-0.5.10.2/docs/src
 ----------------------------------------------------------}
 
@@ -84,7 +84,6 @@ showRec all lvl (Branch size cap val l r) str =
     inside=if all then show (size,cap,val) else show val
     newlvl=lvl+1
     newline=concat (replicate lvl "|  ")
-  
 
 showHeapAsTree all hp = showRec all 0 hp ""
 
@@ -176,16 +175,3 @@ extract hp=(min hp,newHp)
       Branch size cap val l r -> heapify (Branch size cap lastVal l r)
 
 
-
-{--
-foldl::(Foldable b)=> (b->a->b)->b->Heap a->b
-foldl _ acc Empty = acc
-foldl f acc hp = f acc hp
-
-insert:: Ord a => a-> Heap a->Heap a
-insert x Empty = singleton x
-insert x Branch y L R = case compare x y of
-  LT -> Branch y (insert x L) R
-  GT -> 
-
---}

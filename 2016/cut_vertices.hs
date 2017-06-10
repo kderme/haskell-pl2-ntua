@@ -1,3 +1,11 @@
+{--------------------------------------------------------
+  Programming Langiages 2 2015, 
+  National Technical University of Athens
+  Created by Dermentzis Konstantinos
+        
+  This programs find the cut vertices of a graph
+---------------------------------------------------------}
+
 import qualified Data.Text as T
 import System.Environment
 import Data.Array as Array
@@ -19,6 +27,7 @@ qsort (x:xs)=(qsort$filter (\c->c<=x) xs )++[x]++(qsort$filter (\c->c>x) xs )
 
 --transforms a graph from a list of edges to a list of adjacent nodes
 --Set and Map lookups and inserts cost O(log(n)), so it has complexity O(elogn)
+--TODO use mutable Arrays instead of Maps for linear complexity
 edgeToAdjList::Int->[(Node,Node)]->[[Node]]
 edgeToAdjList n e = adj1
   where
@@ -32,6 +41,9 @@ edgeToAdjList n e = adj1
   adj1= map (\(_,set)->Set.toList set) $ Map.toList adjMapOfSets
 
 --The [Ret] list is used to keep a trace of all returns for debugging
+--At each vertex we execute a O(log(n)) lookup for visited nodes.
+--So the complexity of this function is O(elog(n)) 
+--TODO for visited nodes, use mutable Arrays instead of Maps for linear complexity
 dfs :: Node -> Array Node [Node]-> (Ret,[Ret])
 dfs n adj = 
   dfsRec Map.empty 0 0 1
@@ -52,7 +64,10 @@ dfs n adj =
             ((inc,t,newCut,newClosed),newTrace)=dfsRec (Map.insert node counter visited) (counter+1) node adjNode
         (results,cuts,closed,trace)=foldl foldf ([],[],Set.empty,[]) adjNodes
         smallest=foldl (\acc (inc,t)->if inc && t<acc then t else acc) counter results
+        --a node is in a circle if a child is in circle with time<time of the Node
         amInCircle = any (\(inc,t)->inc && t<=counter) results
+        --a Node is a cut node if -> is the first node and first visit leaves unvisited Nodes
+        --			  -> some of its children is not in circle or have circle with t>=time of the Node
         amCut=if node==1 then length results > 1 else amCut1
           where 
           amCut1 = any (\(inc,t)->not inc || (inc && t>=counter)) results
@@ -63,9 +78,9 @@ dfs n adj =
 split:: [String]->[[String]]
 split ls=map (\x -> map T.unpack (T.splitOn (T.pack " ") (T.pack x))) ls
 
-pureMain strs=
+pureMain strFile=
   let
-    spl=split strs
+    spl=split strFile
     input=foldr (\x acc->if length x==2 then (read(head x)::Int,read(head$tail x)::Int):acc else acc) [] spl
     (n,k)=head input
     adjList= edgeToAdjList n $tail input
@@ -76,12 +91,11 @@ pureMain strs=
 
 readLines :: FilePath -> IO [String]
 readLines = fmap lines . readFile
-makeInteger :: [String] -> [Int]
-makeInteger =map read
 
 main = do
-    content <- readLines "in.txt"
-    putStrLn (show$pureMain content)
-   -- return ret
- --   print "1"
-  --  ls<-map (\x -> T.splitOn (T.pack " ") (T.pack x)) content
+  args <- getArgs
+  case args of 
+    [file] -> do
+      content <- readLines file
+      putStrLn (show$pureMain content)
+
